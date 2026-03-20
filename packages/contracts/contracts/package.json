@@ -1,0 +1,28 @@
+{
+  "name": "@trustboxhedera/contracts",
+  "version": "1.0.0",
+  "description": "TrustBoxHedera AI smart contracts — deployed on Hedera Smart Contract Service",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy/deployAll.ts --network hederaTestnet",
+    "deploy:testnet": "hardhat run scripts/deploy/deployAll.ts --network hederaTestnet",
+    "deploy:mainnet": "hardhat run scripts/deploy/deployAll.ts --network hederaMainnet",
+    "deploy:local": "hardhat run scripts/deploy/deployAll.ts --network localhost",
+    "export:abis": "ts-node scripts/exportAbis.ts",
+    "clean": "hardhat clean && rm -rf typechain-types"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "@types/node": "^20.10.0",
+    "hardhat": "^2.19.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.1",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.2"
+  }
+}

@@ -3,7 +3,7 @@
    Imported by both backend and frontend.
    ─────────────────────────────────────────────────── */
 
-import type { HederaConfig, HCSTopics, ScoreBand, ScoreBandNum } from "../types"
+import type { HederaConfig, HCSTopics } from "../types"
 
 // ── Network ──────────────────────────────────────────────────────────────────
 
@@ -51,7 +51,6 @@ export const HEDERA_MAINNET_METAMASK = {
 // These are placeholder defaults — override with env vars
 
 export const HCS_TOPICS: HCSTopics = {
-  credit:     process.env.HCS_CREDIT_TOPIC_ID     ?? "0.0.0",
   audit:      process.env.HCS_AUDIT_TOPIC_ID      ?? "0.0.0",
   intent:     process.env.HCS_INTENT_TOPIC_ID     ?? "0.0.0",
   agent:      process.env.HCS_AGENT_TOPIC_ID      ?? "0.0.0",
@@ -80,20 +79,7 @@ export const PYTH = {
   staleAfterSeconds: 60,
 }
 
-// ── Score Bands ───────────────────────────────────────────────────────────────
-
-export const SCORE_BANDS: Record<ScoreBandNum, ScoreBand> = {
-  1: { label: "Poor",      range: "300–579", color: "#ff4d6a", bg: "rgba(255,77,106,.07)"  },
-  2: { label: "Fair",      range: "580–669", color: "#ffb347", bg: "rgba(255,179,71,.07)"  },
-  3: { label: "Good",      range: "670–739", color: "#52b6ff", bg: "rgba(82,182,255,.07)"  },
-  4: { label: "Excellent", range: "740–850", color: "#00e5c0", bg: "rgba(0,229,192,.07)"   },
-}
-
-export function scoreBandLabel(band: number): string {
-  return SCORE_BANDS[band as ScoreBandNum]?.label ?? "Unknown"
-}
-
-// ── Explorer helpers ──────────────────────────────────────────────────────────
+// ── Explorer // ── Explorer helpers ──────────────────────────────────────────────────────────
 
 export function hashscanTx(txHash: string, network: "testnet" | "mainnet" = "testnet"): string {
   return `https://hashscan.io/${network}/transaction/${txHash}`

@@ -31,37 +31,7 @@ export interface HCSMessage {
   message:         Record<string, unknown>
 }
 
-// ── Score ────────────────────────────────────────────────────────────────────
-
-export type ScoreBandNum = 1 | 2 | 3 | 4
-
-export interface ScoreBand {
-  label: string
-  range: string
-  color: string
-  bg:    string
-}
-
-export interface ScoreResult {
-  success:       boolean
-  action:        "score"
-  scoreBand:     ScoreBandNum
-  bandLabel:     string
-  scoreHash:     string
-  proof:         object
-  publicSignals: string[]
-  receiptCID:    string
-  hcsTopicId:    string
-  hcsSeqNum:     string
-  txHash:        string
-  explorerUrl:   string
-  hashscanUrl:   string
-  timestamp:     string
-  walletAddress: string
-  hederaAccount: string
-}
-
-// ── Audit ────────────────────────────────────────────────────────────────────
+// ── Audit // ── Audit ────────────────────────────────────────────────────────────────────
 
 export type FindingSeverity = "critical" | "high" | "medium" | "low" | "info"
 
@@ -221,7 +191,7 @@ export interface BlindAuditResult {
 
 // ── History ───────────────────────────────────────────────────────────────────
 
-export type HistoryItemType = "score" | "audit" | "intent" | "agent" | "blindaudit"
+export type HistoryItemType = "audit" | "intent" | "agent" | "blindaudit"
 
 export interface HistoryItem {
   id:         string
@@ -235,8 +205,6 @@ export interface HistoryItem {
 }
 
 export interface DashboardStats {
-  latestScoreBand:  ScoreBandNum | null
-  latestScoreLabel: string | null
   totalAudits:      number
   totalIntents:     number
   totalAgents:      number
