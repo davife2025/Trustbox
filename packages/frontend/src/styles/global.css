@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --hbar:        #00A5E0;   /* Hedera brand blue */
+  --hbar-dim:    #00A5E033;
+  --teal:        #00e5c0;
+  --teal-dim:    #00e5c015;
+  --red:         #ff4d6a;
+  --red-dim:     #ff4d6a15;
+  --amber:       #ffb347;
+  --purple:      #8259EF;
+  --purple-dim:  #8259EF15;
+  --bg:          #0a0a0f;
+  --surface:     #111118;
+  --surface2:    #16161f;
+  --border:      #ffffff0f;
+  --text:        #e8e8f0;
+  --muted:       #6b6b80;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 8px;
+  font-size: 13px; font-weight: 500;
+  border: none; cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--hbar); color: #000;
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+.btn-teal {
+  background: var(--teal); color: #000;
+}
+.btn-teal:hover:not(:disabled) { filter: brightness(1.1); }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover:not(:disabled) { border-color: var(--hbar); color: var(--hbar); }
+
+.btn-danger {
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+
+/* ── Card ──────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+/* ── Input ─────────────────────────────────────────────────────────────────── */
+.input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+}
+.input:focus { border-color: var(--hbar); }
+.input::placeholder { color: var(--muted); }
+
+/* ── Chain pill ────────────────────────────────────────────────────────────── */
+.chain-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+  border: 1px solid currentColor;
+}
+
+/* ── Status dot ────────────────────────────────────────────────────────────── */
+.dot-online  { width:7px; height:7px; border-radius:50%; background:var(--teal); }
+.dot-offline { width:7px; height:7px; border-radius:50%; background:var(--muted); }
+.dot-warn    { width:7px; height:7px; border-radius:50%; background:var(--amber); }
+
+/* ── Spinner ───────────────────────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--hbar);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+/* ── Fade in ───────────────────────────────────────────────────────────────── */
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+.fade-in { animation: fadeIn .25s ease forwards; }
+
+/* ── Glow border ───────────────────────────────────────────────────────────── */
+.glow-hbar  { box-shadow: 0 0 0 1px var(--hbar), 0 0 20px var(--hbar-dim); }
+.glow-teal  { box-shadow: 0 0 0 1px var(--teal), 0 0 20px var(--teal-dim); }

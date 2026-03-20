@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: trustboxhedera-backend
+    runtime: node
+    rootDir: packages/backend
+    buildCommand: npm install && npm run build
+    startCommand: node dist/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: HEDERA_NETWORK
+        value: testnet
+      - key: HEDERA_RPC_URL
+        value: https://testnet.hashio.io/api
+      - key: HEDERA_CHAIN_ID
+        value: "296"
+      # Set these in Render dashboard (sensitive):
+      - key: JWT_SECRET
+        sync: false
+      - key: HEDERA_OPERATOR_ID
+        sync: false
+      - key: HEDERA_OPERATOR_KEY
+        sync: false
+      - key: DEPLOYER_PRIVATE_KEY
+        sync: false
+      - key: TRUST_REGISTRY_ADDR
+        sync: false
+      - key: AUDIT_REGISTRY_ADDR
+        sync: false
+      - key: AGENT_MARKETPLACE_ADDR
+        sync: false
+      - key: INTENT_VAULT_ADDR
+        sync: false
+      - key: HCS_AUDIT_TOPIC_ID
+        sync: false
+      - key: HCS_INTENT_TOPIC_ID
+        sync: false
+      - key: HCS_AGENT_TOPIC_ID
+        sync: false
+      - key: HCS_BLINDAUDIT_TOPIC_ID
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: PINATA_JWT
+        sync: false
+      - key: PINATA_GATEWAY
+        value: https://gateway.pinata.cloud
+      - key: PHALA_ENDPOINT
+        value: https://api.phala.network/api/contract/dispatch

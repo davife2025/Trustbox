@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build --workspace=packages/frontend",
+  "outputDirectory": "packages/frontend/dist",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "env": {
+    "VITE_HEDERA_NETWORK":  "testnet",
+    "VITE_HEDERA_CHAIN_ID": "296"
+  }
+}
