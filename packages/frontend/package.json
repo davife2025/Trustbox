@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@hashgraph/sdk":          "^2.40.0",
-    "@hashgraph/hashconnect":  "^3.0.13",
+    "hashconnect":             "^3.0.13",
     "@trustboxhedera/shared":  "*",
     "ethers":                  "^6.9.2",
     "react":                   "^18.2.0",
