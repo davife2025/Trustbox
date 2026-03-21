@@ -39,6 +39,15 @@ const envSchema = z.object({
   HCS_AGENT_TOPIC_ID:      z.string().default(""),
   HCS_BLINDAUDIT_TOPIC_ID: z.string().default(""),
 
+  FRONTEND_URL: z.string().optional(),
+
+  // ── HOL Registry + HCS-10 ────────────────────────────────────────────────
+  HOL_REGISTRY_URL:    z.string().default("https://moonscape.tech"),
+  HOL_AGENT_ACCOUNT_ID:   z.string().optional(),   // dedicated agent Hedera account
+  HOL_AGENT_PRIVATE_KEY:  z.string().optional(),   // agent account private key
+  HOL_AGENT_INBOUND_TOPIC:  z.string().optional(), // set after registration
+  HOL_AGENT_OUTBOUND_TOPIC: z.string().optional(), // set after registration
+
   // ── Groq AI ──────────────────────────────────────────────────────────────
   GROQ_API_KEY: z.string().optional(),
 

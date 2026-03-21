@@ -12,6 +12,7 @@ export default function NavBar() {
     { path: "/dashboard", label: "Dashboard" },
     { path: "/history",   label: "History"   },
     { path: "/market",    label: "Marketplace"},
+    { path: "/chat",      label: "AI Agent 🤖" },,
   ]
 
   return (

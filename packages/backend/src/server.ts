@@ -6,6 +6,8 @@ import "dotenv/config"
 import app from "./app"
 import { env } from "./config/env"
 import { startIntentSubscriber } from "./services/hedera"
+import { startHCS10Listener, registerTrustBoxAgent } from "./agent/hcs10"
+import { routeMessage } from "./agent/router"
 import { getIntentVault, waitForTx, getGasConfig } from "./services/ethers"
 import { ethers } from "ethers"
 
@@ -39,6 +41,17 @@ app.listen(PORT, async () => {
   console.log(`  Network: Hedera ${env.HEDERA_NETWORK}`)
   console.log(`  RPC:     ${env.HEDERA_RPC_URL}`)
   console.log(`  Env:     ${env.NODE_ENV}\n`)
+
+  // ── HOL Registry + HCS-10 agent ─────────────────────────────────────────
+  try {
+    await registerTrustBoxAgent()
+    await startHCS10Listener(async (sender, message) => {
+      return routeMessage(sender, message)
+    })
+    console.log("[hcs10] Agent online — accepting HCS-10 messages")
+  } catch (err: any) {
+    console.warn(`[hcs10] Agent init skipped: ${err.message}`)
+  }
 
   // Start Mirror Node subscriber (replaces Chainlink Automation)
   await startIntentSubscriber(onIntentApproved, 5000)

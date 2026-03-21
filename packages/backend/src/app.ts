@@ -12,6 +12,7 @@ import { scanRouter }    from "./api/scan"
 import { blindAuditRouter } from "./api/blindaudit"
 import { executeRouter } from "./api/execute"
 import { agentsRouter }  from "./api/agents"
+import { holRouter }     from "./api/hol"
 
 const app = express()
 
@@ -51,6 +52,7 @@ app.use("/api/scan",       scanRouter)
 app.use("/api/blindaudit", blindAuditRouter)
 app.use("/api/intent",     executeRouter)
 app.use("/api/agents",     agentsRouter)
+app.use("/api/hol",        holRouter)
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((_req, res) => res.status(404).json({ error: "Route not found" }))

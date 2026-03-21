@@ -1,7 +1,7 @@
 {
   "name": "@trustboxhedera/contracts",
   "version": "1.0.0",
-  "description": "TrustBoxHedera AI smart contracts — deployed on Hedera Smart Contract Service",
+  "description": "TrustBoxHedera AI smart contracts \u2014 deployed on Hedera Smart Contract Service",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
@@ -21,7 +21,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.1",
+    "@openzeppelin/contracts": "^4.9.6",
     "dotenv": "^16.3.1",
     "ethers": "^6.9.2"
   }

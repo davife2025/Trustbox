@@ -6,6 +6,7 @@ import Landing      from "./pages/Landing"
 import Dashboard    from "./pages/Dashboard"
 import { HistoryPage } from "./pages/HistoryPage"
 import Marketplace  from "./pages/Marketplace"
+import AgentChat    from "./pages/AgentChat"
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
             <Route path="/dashboard" element={<><NavBar /><Dashboard /></>} />
             <Route path="/history"   element={<><NavBar /><HistoryPage /></>} />
             <Route path="/market"    element={<><NavBar /><Marketplace /></>} />
+            <Route path="/chat"     element={<><NavBar /><AgentChat /></>} />
             <Route path="*"          element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

@@ -1,7 +1,7 @@
 {
   "name": "@trustboxhedera/backend",
   "version": "1.0.0",
-  "description": "TrustBoxHedera AI — Express backend, Hedera-native",
+  "description": "TrustBoxHedera AI \u2014 Express backend, Hedera-native",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
@@ -21,7 +21,10 @@
     "merkletreejs": "^0.3.11",
     "pinata": "^1.1.2",
     "snarkjs": "^0.7.3",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "@hashgraphonline/standards-sdk": "^2.0.0",
+    "@hashgraphonline/standards-agent-kit": "^2.0.0",
+    "hedera-agent-kit": "^2.0.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

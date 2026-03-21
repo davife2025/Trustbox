@@ -1,78 +1,102 @@
 /* scripts/deploy/deployAll.ts
-   Deploys all 4 TrustBoxHedera contracts to Hedera Smart Contract Service.
+   Deploys all 4 contracts to Hedera HSCS using raw ethers.js.
+   Bypasses hardhat-ethers gas estimation (which fails on Hedera).
    Run: npx hardhat run scripts/deploy/deployAll.ts --network hederaTestnet
-   ─────────────────────────────────────────────────────────────────────── */
+*/
 
 import { ethers, network } from "hardhat"
-import * as fs from "fs"
+import { JsonRpcProvider, Wallet, ContractFactory } from "ethers"
+import * as fs   from "fs"
 import * as path from "path"
+import * as dotenv from "dotenv"
 
-interface DeployedAddresses {
-  network:          string
-  chainId:          number
-  deployedAt:       string
-  deployer:         string
-  TrustRegistry:    string
-  AuditRegistry:    string
-  AgentMarketplace: string
-  IntentVault:      string
+dotenv.config({ path: path.resolve(__dirname, "../../../../.env") })
+
+// ── Hedera-specific tx overrides ─────────────────────────────────────────────
+// Hedera HSCS needs explicit gasPrice — must NOT use estimateGas.
+// 750 Gwei is well above testnet minimum and avoids INSUFFICIENT_TX_FEE.
+const OVERRIDES = {
+  gasPrice: ethers.parseUnits("750", "gwei"),
+  gasLimit: 1_500_000n,
+}
+
+async function deployContract(
+  wallet:    Wallet,
+  name:      string,
+  artifacts: any
+): Promise<string> {
+  console.log(`\nDeploying ${name}...`)
+
+  const factory = new ContractFactory(
+    artifacts.abi,
+    artifacts.bytecode,
+    wallet
+  )
+
+  const contract = await factory.deploy(OVERRIDES)
+  console.log(`  tx: ${contract.deploymentTransaction()?.hash}`)
+  console.log(`  waiting for confirmation...`)
+  await contract.waitForDeployment()
+  const address = await contract.getAddress()
+  console.log(`  ✅ ${name}: ${address}`)
+  return address
 }
 
 async function main() {
-  const [deployer] = await ethers.getSigners()
-  const chainId    = (await ethers.provider.getNetwork()).chainId
+  // ── Use raw ethers provider + wallet (bypasses hardhat gas estimation) ────
+  const RPC_URL    = "https://testnet.hashio.io/api"
+  const PRIV_KEY   = process.env.DEPLOYER_PRIVATE_KEY ?? ""
+
+  if (!PRIV_KEY || PRIV_KEY === "0x..." || PRIV_KEY.length < 64) {
+    throw new Error("DEPLOYER_PRIVATE_KEY not set correctly in .env")
+  }
+
+  const provider = new JsonRpcProvider(RPC_URL, {
+    chainId: 296,
+    name:    "hedera-testnet",
+  })
+  const wallet  = new Wallet(PRIV_KEY, provider)
+  const balance = await provider.getBalance(wallet.address)
 
   console.log("\n╔══════════════════════════════════════════════════╗")
   console.log("║  TrustBoxHedera AI — Contract Deploy             ║")
   console.log("╚══════════════════════════════════════════════════╝")
-  console.log(`  Network:  ${network.name} (chainId: ${chainId})`)
-  console.log(`  Deployer: ${deployer.address}`)
+  console.log(`  Network:  hederaTestnet (chainId: 296)`)
+  console.log(`  Deployer: ${wallet.address}`)
+  console.log(`  Balance:  ${ethers.formatEther(balance)} HBAR`)
 
-  const balance = await ethers.provider.getBalance(deployer.address)
-  console.log(`  Balance:  ${ethers.formatEther(balance)} HBAR\n`)
-
-  if (balance === 0n) {
-    throw new Error("Deployer has zero balance — fund via https://portal.hedera.com")
+  if (balance < ethers.parseEther("5")) {
+    throw new Error(`Balance too low. Need 5+ HBAR. Get free HBAR at https://faucet.hedera.com`)
   }
 
-  // ── 1. TrustRegistry ──────────────────────────────────────────────────────
-  console.log("Deploying TrustRegistry...")
-  const TrustRegistry = await ethers.getContractFactory("TrustRegistry")
-  const trustRegistry = await TrustRegistry.deploy()
-  await trustRegistry.waitForDeployment()
-  const trustRegistryAddr = await trustRegistry.getAddress()
-  console.log(`  ✅ TrustRegistry:    ${trustRegistryAddr}`)
+  // ── Load compiled artifacts ───────────────────────────────────────────────
+  const artifactsDir = path.join(__dirname, "../../artifacts/contracts")
 
-  // ── 2. AuditRegistry ──────────────────────────────────────────────────────
-  console.log("Deploying AuditRegistry...")
-  const AuditRegistry = await ethers.getContractFactory("AuditRegistry")
-  const auditRegistry = await AuditRegistry.deploy()
-  await auditRegistry.waitForDeployment()
-  const auditRegistryAddr = await auditRegistry.getAddress()
-  console.log(`  ✅ AuditRegistry:    ${auditRegistryAddr}`)
+  function loadArtifact(contractName: string) {
+    const p = path.join(artifactsDir, `${contractName}.sol`, `${contractName}.json`)
+    if (!fs.existsSync(p)) {
+      throw new Error(`Artifact not found: ${p}\nRun: npx hardhat compile`)
+    }
+    return JSON.parse(fs.readFileSync(p, "utf8"))
+  }
 
-  // ── 3. AgentMarketplace ───────────────────────────────────────────────────
-  console.log("Deploying AgentMarketplace...")
-  const AgentMarketplace = await ethers.getContractFactory("AgentMarketplace")
-  const agentMarketplace = await AgentMarketplace.deploy()
-  await agentMarketplace.waitForDeployment()
-  const agentMarketplaceAddr = await agentMarketplace.getAddress()
-  console.log(`  ✅ AgentMarketplace: ${agentMarketplaceAddr}`)
+  const TrustRegistryArtifact    = loadArtifact("TrustRegistry")
+  const AuditRegistryArtifact    = loadArtifact("AuditRegistry")
+  const AgentMarketplaceArtifact = loadArtifact("AgentMarketplace")
+  const IntentVaultArtifact      = loadArtifact("IntentVault")
 
-  // ── 4. IntentVault ────────────────────────────────────────────────────────
-  console.log("Deploying IntentVault...")
-  const IntentVault = await ethers.getContractFactory("IntentVault")
-  const intentVault = await IntentVault.deploy()
-  await intentVault.waitForDeployment()
-  const intentVaultAddr = await intentVault.getAddress()
-  console.log(`  ✅ IntentVault:      ${intentVaultAddr}`)
+  // ── Deploy ────────────────────────────────────────────────────────────────
+  const trustRegistryAddr    = await deployContract(wallet, "TrustRegistry",    TrustRegistryArtifact)
+  const auditRegistryAddr    = await deployContract(wallet, "AuditRegistry",    AuditRegistryArtifact)
+  const agentMarketplaceAddr = await deployContract(wallet, "AgentMarketplace", AgentMarketplaceArtifact)
+  const intentVaultAddr      = await deployContract(wallet, "IntentVault",      IntentVaultArtifact)
 
   // ── Save addresses ────────────────────────────────────────────────────────
-  const deployed: DeployedAddresses = {
-    network:          network.name,
-    chainId:          Number(chainId),
+  const deployed = {
+    network:          "hederaTestnet",
+    chainId:          296,
     deployedAt:       new Date().toISOString(),
-    deployer:         deployer.address,
+    deployer:         wallet.address,
     TrustRegistry:    trustRegistryAddr,
     AuditRegistry:    auditRegistryAddr,
     AgentMarketplace: agentMarketplaceAddr,
@@ -80,7 +104,7 @@ async function main() {
   }
 
   const outDir  = path.join(__dirname, "../../deployments")
-  const outFile = path.join(outDir, `${network.name}.json`)
+  const outFile = path.join(outDir, "hederaTestnet.json")
   fs.mkdirSync(outDir, { recursive: true })
   fs.writeFileSync(outFile, JSON.stringify(deployed, null, 2))
   console.log(`\n  📄 Addresses saved → ${outFile}`)
@@ -92,19 +116,16 @@ async function main() {
   console.log(`  AGENT_MARKETPLACE_ADDR=${agentMarketplaceAddr}`)
   console.log(`  INTENT_VAULT_ADDR=${intentVaultAddr}`)
 
-  // ── Print HashScan links ──────────────────────────────────────────────────
-  const explorer = chainId === 296n
-    ? "https://hashscan.io/testnet/contract"
-    : "https://hashscan.io/mainnet/contract"
   console.log("\n  ── HashScan ─────────────────────────────────────────")
-  console.log(`  TrustRegistry:    ${explorer}/${trustRegistryAddr}`)
-  console.log(`  AuditRegistry:    ${explorer}/${auditRegistryAddr}`)
-  console.log(`  AgentMarketplace: ${explorer}/${agentMarketplaceAddr}`)
-  console.log(`  IntentVault:      ${explorer}/${intentVaultAddr}`)
+  const base = "https://hashscan.io/testnet/contract"
+  console.log(`  TrustRegistry:    ${base}/${trustRegistryAddr}`)
+  console.log(`  AuditRegistry:    ${base}/${auditRegistryAddr}`)
+  console.log(`  AgentMarketplace: ${base}/${agentMarketplaceAddr}`)
+  console.log(`  IntentVault:      ${base}/${intentVaultAddr}`)
   console.log("\n✅ All contracts deployed.\n")
 }
 
 main().catch(err => {
-  console.error(err)
+  console.error("\n❌", err.message)
   process.exit(1)
 })

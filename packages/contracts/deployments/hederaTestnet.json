@@ -1,0 +1,10 @@
+{
+  "network": "hederaTestnet",
+  "chainId": 296,
+  "deployedAt": "2026-03-21T06:05:21.624Z",
+  "deployer": "0x494F52322eA822E35Cf9D05fF801e00Fc26AEa5F",
+  "TrustRegistry": "0x7Dd290DaF02F98d3d583fb35540c5d78dDeCEcbA",
+  "AuditRegistry": "0x1FBEA692383bEAB0843c72Dd8dA712c935AbFA06",
+  "AgentMarketplace": "0xa36f7E1DC41a62A5C0E9074C61F5C471a6F53d0c",
+  "IntentVault": "0xa39BD8F5Fb7CA64BFD3632A43C7bBBE6D4152129"
+}
