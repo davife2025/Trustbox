@@ -13,6 +13,7 @@ import { getAuditRegistry, waitForTx, getGasConfig, signer, explorerTx, explorer
 import { pinAuditReport }      from "../services/ipfs"
 import { analyseContract }     from "../services/groq"
 import { submitAuditTrail }    from "../services/hedera"
+import { saveAudit }           from "../services/supabase"
 import { env }                 from "../config/env"
 
 export const auditRouter = Router()
