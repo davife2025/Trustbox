@@ -68,7 +68,7 @@ export const ScanSchema = z.object({
   walletAddress: z.string().min(1),
   agentId:       z.string().min(1),
   agentName:     z.string().min(1),
-  teeEndpoint:   z.string().url(),
+  teeEndpoint:   z.string().min(1),
   stakeAmount:   z.string().optional(),
   signature:     z.string().optional(),
 })
@@ -78,7 +78,8 @@ export const BlindAuditSchema = z.object({
   contractAddr:   z.string().min(1),
   agentId:        z.string().min(1),
   agentOperator:  z.string().optional(),
-  auditScope:     z.array(z.string()).optional(),
+  auditScope:     z.union([z.array(z.string()), z.string()]).optional()
+    .transform(v => typeof v === "string" ? v.split(",").map(s => s.trim()).filter(Boolean) : v),
   projectName:    z.string().optional(),
   signature:      z.string().optional(),
 })

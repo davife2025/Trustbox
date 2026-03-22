@@ -6,7 +6,7 @@
 
 import { Router, Request, Response } from "express"
 import { ethers }            from "ethers"
-import { requireWalletSig }  from "../middleware/auth"
+import { requireJWT }        from "../middleware/auth"
 import { walletRateLimit }   from "../middleware/rateLimit"
 import { validate, IntentParseSchema, IntentSubmitSchema } from "../middleware/validate"
 import { parseIntent }       from "../services/groq"
@@ -56,7 +56,7 @@ executeRouter.post("/parse",
 executeRouter.post("/submit",
   walletRateLimit,
   validate(IntentSubmitSchema),
-  requireWalletSig,
+  requireJWT,
   async (req: Request, res: Response) => {
     try {
       const {

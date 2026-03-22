@@ -4,7 +4,7 @@
 
 import { Router, Request, Response } from "express"
 import { ethers }            from "ethers"
-import { requireWalletSig }  from "../middleware/auth"
+import { requireJWT }        from "../middleware/auth"
 import { walletRateLimit }   from "../middleware/rateLimit"
 import { validate, BlindAuditSchema } from "../middleware/validate"
 import { uploadJSON, fetchJSON } from "../services/ipfs"
@@ -19,7 +19,7 @@ export const blindAuditRouter = Router()
 blindAuditRouter.post("/",
   walletRateLimit,
   validate(BlindAuditSchema),
-  requireWalletSig,
+  requireJWT,
   async (req: Request, res: Response) => {
     try {
       const {

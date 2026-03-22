@@ -4,7 +4,7 @@
 
 import { Router, Request, Response } from "express"
 import { ethers }           from "ethers"
-import { requireWalletSig } from "../middleware/auth"
+import { requireJWT } from "../middleware/auth"
 import { walletRateLimit }  from "../middleware/rateLimit"
 import { validate, ScanSchema } from "../middleware/validate"
 import { getAgentMarketplace, waitForTx, getGasConfig, explorerTx } from "../services/ethers"
@@ -65,7 +65,7 @@ function runBehaviouralScan(agentId: string, agentName: string, teeEndpoint: str
 scanRouter.post("/",
   walletRateLimit,
   validate(ScanSchema),
-  requireWalletSig,
+  requireJWT,
   async (req: Request, res: Response) => {
     try {
       const {
