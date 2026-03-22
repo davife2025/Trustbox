@@ -12,7 +12,7 @@ export default function App() {
   return (
     <WalletProvider>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
           <Routes>
             <Route path="/"          element={<Landing />} />
             <Route path="/dashboard" element={<><NavBar /><Dashboard /></>} />

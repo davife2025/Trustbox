@@ -14,22 +14,36 @@ export interface AuthUser {
   created_at:      string
 }
 
+// ── Read token synchronously so authFetch is ready on first render ─────────────
+function readStoredToken(): string | null {
+  try {
+    const saved  = localStorage.getItem(TOKEN_KEY)
+    const expiry = Number(localStorage.getItem(EXPIRY_KEY) ?? 0)
+    if (saved && Date.now() < expiry) return saved
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(EXPIRY_KEY)
+  } catch { /* SSR / private browsing */ }
+  return null
+}
+
 export function useAuth(
   walletAddress: string | null,
   signMessage:   (msg: string) => Promise<string>
 ) {
-  const [token,  setToken]  = useState<string | null>(null)
-  const [user,   setUser]   = useState<AuthUser | null>(null)
+  // Initialise synchronously — no flash of unauthenticated state
+  const [token,   setToken]   = useState<string | null>(() => readStoredToken())
+  const [user,    setUser]    = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error,  setError]  = useState<string | null>(null)
+  const [error,   setError]   = useState<string | null>(null)
 
-  // Restore from localStorage
+  // Re-check expiry when wallet changes (e.g. disconnect + reconnect)
   useEffect(() => {
-    const saved    = localStorage.getItem(TOKEN_KEY)
-    const expiry   = Number(localStorage.getItem(EXPIRY_KEY) ?? 0)
-    if (saved && Date.now() < expiry) setToken(saved)
-    else { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(EXPIRY_KEY) }
-  }, [])
+    const stored = readStoredToken()
+    if (!stored && token) {
+      setToken(null)
+      setUser(null)
+    }
+  }, [walletAddress])
 
   const login = useCallback(async (hederaAccount?: string) => {
     if (!walletAddress) return
@@ -38,7 +52,7 @@ export function useAuth(
       const message   = `${MSG_PREFIX}${walletAddress.toLowerCase()}`
       const signature = await signMessage(message)
 
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+      const res  = await fetch(`${API_URL}/api/auth/login`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ walletAddress, signature, hederaAccount }),
@@ -49,7 +63,7 @@ export function useAuth(
       localStorage.setItem(TOKEN_KEY,  data.token)
       localStorage.setItem(EXPIRY_KEY, String(data.expiresAt))
       setToken(data.token)
-      setUser(data.user)
+      setUser(data.user ?? null)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -60,16 +74,19 @@ export function useAuth(
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(EXPIRY_KEY)
-    setToken(null); setUser(null)
+    setToken(null)
+    setUser(null)
   }, [])
 
+  // authFetch always reads the latest token — no stale closure
   const authFetch = useCallback(async (url: string, options: RequestInit = {}) => {
+    const currentToken = readStoredToken() ?? token
     return fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
         ...(options.headers ?? {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(currentToken ? { Authorization: `Bearer ${currentToken}` } : {}),
       },
     })
   }, [token])
