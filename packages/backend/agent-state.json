@@ -1,0 +1,10 @@
+{
+  "accountId": "0.0.8308503",
+  "privateKey": "3030020100300706052b8104000a042204204826df2c10abb7edb388ff35258dbef4632f870e4af32e415487f26852b99aeb",
+  "inboundTopic": "0.0.8325399",
+  "outboundTopic": "0.0.8325400",
+  "registryUrl": "https://moonscape.tech",
+  "registeredAt": "2026-03-22T05:34:49.527Z",
+  "name": "TrustBox AI Agent",
+  "alias": "trustbox_mn1bo7cg"
+}

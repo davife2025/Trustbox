@@ -1,24 +1,29 @@
 /* agent/hcs10.ts — TrustBoxHedera AI
-   HCS-10 OpenConvAI agent:
-     - Registers TrustBox AI Agent in HOL Registry Broker
-     - Listens on inbound HCS topic for natural language messages
-     - Routes to TrustBox workflow handlers
-     - Responds via outbound HCS topic
-   ──────────────────────────────────────────────────────────── */
+   HCS-10 agent registration + message polling using raw @hashgraph/sdk.
+   No browser SDKs. Pure Node.js.
+
+   HCS-10 OpenConvAI spec:
+     - Agent has an inbound HCS topic (public, anyone can submit)
+     - Agent has an outbound HCS topic (agent publishes replies)
+     - Messages use JSON envelope: { op, data, operator_id, ... }
+     - Registration writes agent profile to a registry topic
+*/
 
 import {
-  HCS10Client,
-  AgentBuilder,
-  AIAgentCapability,
-  InboundTopicType,
-} from "@hashgraphonline/standards-sdk"
+  Client,
+  AccountId,
+  PrivateKey,
+  TopicCreateTransaction,
+  TopicMessageSubmitTransaction,
+  TopicId,
+} from "@hashgraph/sdk"
 import * as fs   from "fs"
 import * as path from "path"
 import { env }   from "../config/env"
 
-// ── State file — persists agent identity between restarts ─────────────────────
+// ── State file ────────────────────────────────────────────────────────────────
 
-const STATE_FILE = path.resolve(__dirname, "../../agent-state.json")
+const STATE_FILE = path.resolve(process.cwd(), "agent-state.json")
 
 export interface AgentState {
   accountId:    string
@@ -33,185 +38,230 @@ export interface AgentState {
 
 function loadState(): AgentState | null {
   try {
-    if (fs.existsSync(STATE_FILE)) {
+    if (fs.existsSync(STATE_FILE))
       return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"))
-    }
-  } catch { /* ignore */ }
+  } catch { }
   return null
 }
 
-function saveState(state: AgentState): void {
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2))
-  console.log(`[hcs10] Agent state saved → ${STATE_FILE}`)
+function saveState(s: AgentState) {
+  fs.writeFileSync(STATE_FILE, JSON.stringify(s, null, 2))
+  console.log(`[hcs10] State saved → ${STATE_FILE}`)
 }
 
-// ── Build HCS10Client ─────────────────────────────────────────────────────────
+// ── Hedera client ─────────────────────────────────────────────────────────────
 
-function buildClient(accountId: string, privateKey: string): HCS10Client {
-  return new HCS10Client({
-    network:                env.HEDERA_NETWORK as "testnet" | "mainnet",
-    operatorId:             accountId,
-    operatorPrivateKey:     privateKey,
-    logLevel:               "info",
-    prettyPrint:            true,
-    guardedRegistryBaseUrl: env.HOL_REGISTRY_URL,
-  })
+function buildHederaClient(accountId: string, privateKey: string): Client {
+  const client = Client.forTestnet()
+  client.setOperator(
+    AccountId.fromString(accountId),
+    PrivateKey.fromString(privateKey)
+  )
+  return client
+}
+
+// ── Create HCS topic ──────────────────────────────────────────────────────────
+
+async function createTopic(client: Client, memo: string, privateKey: PrivateKey): Promise<string> {
+  const tx = await new TopicCreateTransaction()
+    .setTopicMemo(memo)
+    .setAdminKey(privateKey.publicKey)
+    .setSubmitKey(privateKey.publicKey)
+    .execute(client)
+
+  const receipt = await tx.getReceipt(client)
+  return receipt.topicId!.toString()
 }
 
 // ── Register agent ────────────────────────────────────────────────────────────
 
 export async function registerTrustBoxAgent(): Promise<AgentState> {
-  // Use existing state if already registered
   const existing = loadState()
   if (existing) {
-    console.log(`[hcs10] Agent already registered: ${existing.accountId}`)
+    console.log(`[hcs10] Already registered: ${existing.accountId}`)
     console.log(`[hcs10] Inbound:  ${existing.inboundTopic}`)
     console.log(`[hcs10] Outbound: ${existing.outboundTopic}`)
     return existing
   }
 
-  // Use dedicated agent account if provided, otherwise use operator
   const accountId  = env.HOL_AGENT_ACCOUNT_ID  ?? env.HEDERA_OPERATOR_ID
   const privateKey = env.HOL_AGENT_PRIVATE_KEY  ?? env.HEDERA_OPERATOR_KEY
 
-  if (!accountId || !privateKey) {
-    throw new Error(
-      "HEDERA_OPERATOR_ID and HEDERA_OPERATOR_KEY (or HOL_AGENT_ACCOUNT_ID + HOL_AGENT_PRIVATE_KEY) must be set"
-    )
-  }
+  if (!accountId || !privateKey)
+    throw new Error("HEDERA_OPERATOR_ID + HEDERA_OPERATOR_KEY must be set in .env")
 
-  const client = buildClient(accountId, privateKey)
+  const client = buildHederaClient(accountId, privateKey)
+  const pk     = PrivateKey.fromString(privateKey)
   const alias  = `trustbox_${Date.now().toString(36)}`
 
-  console.log("\n[hcs10] Registering TrustBox AI Agent in HOL Registry…")
-  console.log(`[hcs10] Registry: ${env.HOL_REGISTRY_URL}`)
-  console.log(`[hcs10] Account:  ${accountId}`)
+  console.log(`\n[hcs10] Registering TrustBox AI Agent...`)
+  console.log(`[hcs10] Account: ${accountId}`)
 
-  const agentBuilder = new AgentBuilder()
-    .setName("TrustBox AI Agent")
-    .setAlias(alias)
-    .setDescription(
-      "Verifiable trust infrastructure for AI agents on Hedera. " +
-      "I can audit smart contracts, verify agent credentials (ERC-8004), " +
-      "execute signed intents, run security scans, and perform blind TEE audits. " +
-      "All results anchored on Hedera Consensus Service."
-    )
-    .setAgentType("autonomous")
-    .setCapabilities([
-      AIAgentCapability.TEXT_GENERATION,
-      AIAgentCapability.TEXT_SUMMARIZATION,
-    ])
-    .setModel("llama-3.1-70b-versatile")
-    .setInboundTopicType(InboundTopicType.PUBLIC)
-    .addProperty("dapp",       "https://trustboxhedera-ai.vercel.app")
-    .addProperty("version",    "1.0.0")
-    .addProperty("workflows",  "audit,verify,execute,scan,blindaudit")
-    .addProperty("erc8004",    "true")
-    .addProperty("chain",      "hedera-testnet")
-    .addProperty("hbar_stake", "true")
+  // Create inbound + outbound HCS topics
+  console.log(`[hcs10] Creating inbound topic...`)
+  const inboundTopic  = await createTopic(client, `TrustBoxHedera AI Agent — inbound (${alias})`, pk)
+  console.log(`[hcs10] Creating outbound topic...`)
+  const outboundTopic = await createTopic(client, `TrustBoxHedera AI Agent — outbound (${alias})`, pk)
 
-  const result = await client.createAndRegisterAgent(agentBuilder, {
-    initialBalance: 5,                    // fund new agent account with 5 HBAR
-    progressCallback: (msg: string) => console.log(`[hcs10] ${msg}`),
-  })
+  console.log(`[hcs10] Inbound:  ${inboundTopic}`)
+  console.log(`[hcs10] Outbound: ${outboundTopic}`)
+
+  // Publish HCS-11 agent profile to outbound topic
+  const profile = {
+    op:           "agent_profile",
+    operator_id:  accountId,
+    name:         "TrustBox AI Agent",
+    alias,
+    description:  "Verifiable trust infrastructure for AI agents on Hedera. Audit contracts, verify ERC-8004 credentials, execute signed intents, run security scans and blind TEE audits.",
+    model:        "llama-3.1-70b-versatile",
+    type:         "autonomous",
+    capabilities: ["audit", "verify", "execute", "scan", "blindaudit"],
+    inbound_topic:  inboundTopic,
+    outbound_topic: outboundTopic,
+    dapp:         "https://trustboxhedera-ai.vercel.app",
+    version:      "1.0.0",
+    timestamp:    new Date().toISOString(),
+  }
+
+  await submitToTopic(client, pk, outboundTopic, JSON.stringify(profile))
+  console.log(`[hcs10] Agent profile published to outbound topic`)
+
+  // Register with HOL Registry via outbound topic message
+  const registryMsg = {
+    op:           "register",
+    operator_id:  accountId,
+    agent_profile: profile,
+    registry_url: env.HOL_REGISTRY_URL,
+  }
+  await submitToTopic(client, pk, outboundTopic, JSON.stringify(registryMsg))
+
+  client.close()
 
   const state: AgentState = {
-    accountId:     result.accountId,
-    privateKey:    result.privateKey ?? privateKey,
-    inboundTopic:  result.metadata?.inboundTopicId  ?? "",
-    outboundTopic: result.metadata?.outboundTopicId ?? "",
-    registryUrl:   env.HOL_REGISTRY_URL,
-    registeredAt:  new Date().toISOString(),
-    name:          "TrustBox AI Agent",
+    accountId,
+    privateKey,
+    inboundTopic,
+    outboundTopic,
+    registryUrl:  env.HOL_REGISTRY_URL,
+    registeredAt: new Date().toISOString(),
+    name:         "TrustBox AI Agent",
     alias,
   }
 
   saveState(state)
 
-  console.log("\n[hcs10] ✅ Agent registered!")
-  console.log(`[hcs10] Account:  ${state.accountId}`)
-  console.log(`[hcs10] Inbound:  ${state.inboundTopic}`)
-  console.log(`[hcs10] Outbound: ${state.outboundTopic}`)
-  console.log(`[hcs10] Registry: ${env.HOL_REGISTRY_URL}`)
+  console.log(`\n[hcs10] ✅ Agent registered!`)
+  console.log(`[hcs10] HashScan inbound:  https://hashscan.io/testnet/topic/${inboundTopic}`)
+  console.log(`[hcs10] HashScan outbound: https://hashscan.io/testnet/topic/${outboundTopic}`)
   console.log(`\n[hcs10] Add to .env:`)
-  console.log(`  HOL_AGENT_INBOUND_TOPIC=${state.inboundTopic}`)
-  console.log(`  HOL_AGENT_OUTBOUND_TOPIC=${state.outboundTopic}`)
+  console.log(`  HOL_AGENT_INBOUND_TOPIC=${inboundTopic}`)
+  console.log(`  HOL_AGENT_OUTBOUND_TOPIC=${outboundTopic}`)
 
   return state
 }
 
-// ── Message listener ──────────────────────────────────────────────────────────
+// ── Submit message to HCS topic ───────────────────────────────────────────────
+
+async function submitToTopic(
+  client:     Client,
+  privateKey: PrivateKey,
+  topicId:    string,
+  message:    string
+): Promise<void> {
+  const tx = await new TopicMessageSubmitTransaction()
+    .setTopicId(TopicId.fromString(topicId))
+    .setMessage(message)
+    .execute(client)
+  await tx.getReceipt(client)
+}
+
+// ── Mirror Node polling ───────────────────────────────────────────────────────
 
 type MessageHandler = (
   sender:  string,
   message: string,
-  context: { connectionTopic?: string; sequenceNumber?: string }
+  ctx:     { seqNum?: string }
 ) => Promise<string>
 
-let _client: HCS10Client | null = null
-let _state:  AgentState  | null = null
+let _state:  AgentState | null = null
+let _lastSeq = 0
+let _timer:  ReturnType<typeof setInterval> | null = null
 
-export async function startHCS10Listener(onMessage: MessageHandler): Promise<void> {
+const MIRROR = "https://testnet.mirrornode.hedera.com/api/v1"
+
+async function poll(onMessage: MessageHandler) {
+  if (!_state?.inboundTopic) return
+
+  try {
+    const url = `${MIRROR}/topics/${_state.inboundTopic}/messages?limit=10&order=asc` +
+      (_lastSeq > 0 ? `&sequencenumber=gt:${_lastSeq}` : "")
+
+    const res = await fetch(url)
+    if (!res.ok) return
+
+    const data: any = await res.json()
+    for (const m of (data.messages ?? [])) {
+      _lastSeq = Math.max(_lastSeq, Number(m.sequence_number))
+
+      let payload: any
+      try { payload = JSON.parse(Buffer.from(m.message, "base64").toString("utf8")) }
+      catch { continue }
+
+      // Accept HCS-10 message envelopes
+      const op      = payload.op ?? ""
+      const content = String(payload.data ?? payload.message ?? "")
+      const sender  = payload.operator_id ?? m.payer_account_id ?? "unknown"
+
+      if (!["message", "connection_request"].includes(op) || !content) continue
+
+      console.log(`[hcs10] ← ${sender}: ${content.slice(0, 80)}`)
+
+      try {
+        const reply      = await onMessage(sender, content, { seqNum: String(m.sequence_number) })
+        const replyEnv   = JSON.stringify({ op: "message", data: reply, operator_id: _state.accountId, timestamp: new Date().toISOString() })
+        const pk         = PrivateKey.fromString(_state.privateKey)
+        const hClient    = buildHederaClient(_state.accountId, _state.privateKey)
+        await submitToTopic(hClient, pk, _state.outboundTopic, replyEnv)
+        hClient.close()
+        console.log(`[hcs10] → reply sent to outbound topic`)
+      } catch (e: any) {
+        console.warn(`[hcs10] handler error: ${e.message}`)
+      }
+    }
+  } catch (e: any) {
+    console.warn(`[hcs10] poll error: ${e.message}`)
+  }
+}
+
+export async function startHCS10Listener(onMessage: MessageHandler, intervalMs = 8000) {
   _state = loadState()
   if (!_state) {
-    console.warn("[hcs10] No agent state found — run registerTrustBoxAgent() first")
+    console.warn("[hcs10] No agent state — POST /api/hol/register first")
     return
   }
+  console.log(`[hcs10] Polling inbound topic ${_state.inboundTopic} every ${intervalMs}ms`)
+  await poll(onMessage)
+  _timer = setInterval(() => poll(onMessage), intervalMs)
+}
 
-  _client = buildClient(_state.accountId, _state.privateKey)
-
-  console.log(`[hcs10] Listening on inbound topic ${_state.inboundTopic}…`)
-
-  // Start monitoring inbound topic for connection requests + messages
-  await _client.startMonitoring({
-    topicId:           _state.inboundTopic,
-    progressCallback:  (msg: string) => console.log(`[hcs10] ${msg}`),
-    onConnectionRequest: async (request: any) => {
-      console.log(`[hcs10] Connection request from ${request.requestingAccountId}`)
-      try {
-        await _client!.handleConnectionRequest(request)
-        console.log(`[hcs10] Connection accepted: ${request.requestingAccountId}`)
-      } catch (err: any) {
-        console.warn(`[hcs10] Connection accept failed: ${err.message}`)
-      }
-    },
-    onMessage: async (msg: any) => {
-      const sender  = msg.senderAccountId ?? "unknown"
-      const content = msg.content ?? msg.message ?? ""
-      const connTopic = msg.connectionTopicId
-
-      if (!content) return
-
-      console.log(`[hcs10] Message from ${sender}: ${content.slice(0, 80)}…`)
-
-      try {
-        const reply = await onMessage(sender, content, {
-          connectionTopic: connTopic,
-          sequenceNumber:  msg.sequenceNumber?.toString(),
-        })
-        // Send reply back on the connection topic
-        if (connTopic) {
-          await _client!.sendMessage(connTopic, reply)
-        } else {
-          await _client!.sendMessage(_state!.outboundTopic, reply)
-        }
-        console.log(`[hcs10] Reply sent to ${sender}`)
-      } catch (err: any) {
-        console.warn(`[hcs10] Handler error: ${err.message}`)
-      }
-    },
-  })
+export function stopHCS10Listener() {
+  if (_timer) { clearInterval(_timer); _timer = null }
 }
 
 export function getAgentState(): AgentState | null {
   return _state ?? loadState()
 }
 
-export async function sendHCS10Message(topicId: string, message: string): Promise<void> {
+export async function sendHCS10Message(topicId: string, message: string) {
   const state = getAgentState()
-  if (!state || !_client) {
-    console.warn("[hcs10] Not connected — cannot send message")
-    return
+  if (!state) { console.warn("[hcs10] No state"); return }
+  try {
+    const pk     = PrivateKey.fromString(state.privateKey)
+    const client = buildHederaClient(state.accountId, state.privateKey)
+    const env_   = JSON.stringify({ op: "message", data: message, operator_id: state.accountId, timestamp: new Date().toISOString() })
+    await submitToTopic(client, pk, topicId, env_)
+    client.close()
+  } catch (e: any) {
+    console.warn(`[hcs10] send error: ${e.message}`)
   }
-  await _client.sendMessage(topicId, message)
 }
