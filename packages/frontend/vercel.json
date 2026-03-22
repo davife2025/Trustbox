@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "env": {
+    "VITE_HEDERA_NETWORK":          "testnet",
+    "VITE_HEDERA_CHAIN_ID":         "296",
+    "VITE_BACKEND_URL":             "https://trustboxhedera-backend.onrender.com",
+    "VITE_TRUST_REGISTRY_ADDR":     "0x7Dd290DaF02F98d3d583fb35540c5d78dDeCEcbA",
+    "VITE_AUDIT_REGISTRY_ADDR":     "0x1FBEA692383bEAB0843c72Dd8dA712c935AbFA06",
+    "VITE_AGENT_MARKETPLACE_ADDR":  "0xa36f7E1DC41a62A5C0E9074C61F5C471a6F53d0c",
+    "VITE_INTENT_VAULT_ADDR":       "0xa39BD8F5Fb7CA64BFD3632A43C7bBBE6D4152129"
+  }
+}
