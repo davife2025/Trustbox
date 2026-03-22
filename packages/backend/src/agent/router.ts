@@ -1,160 +1,76 @@
-/* agent/router.ts — TrustBoxHedera AI
-   Natural language router for HCS-10 messages.
-   Parses user intent and dispatches to TrustBox workflow handlers.
-   Returns a plain-text response suitable for HCS-10 reply.
-   ──────────────────────────────────────────────────────────── */
+/* agent/router.ts — TrustBoxHedera AI — Fixed
+   - Removed unused API_BASE
+   - Single import block from groq
+   - Better unknown handler
+*/
 
-import { parseIntent }    from "../services/groq"
-import { analyseContract } from "../services/groq"
-import { env }            from "../config/env"
+import { parseIntent, analyseContract } from "../services/groq"
+import { env } from "../config/env"
 
-const API_BASE = `http://localhost:${env.PORT ?? 4000}`
-
-// ── Intent classification ─────────────────────────────────────────────────────
-
-type WorkflowType =
-  | "audit"
-  | "verify"
-  | "execute"
-  | "scan"
-  | "blindaudit"
-  | "help"
-  | "status"
-  | "unknown"
+type WorkflowType = "audit"|"verify"|"execute"|"scan"|"blindaudit"|"help"|"status"|"unknown"
 
 interface ParsedIntent {
-  workflow:  WorkflowType
-  params:    Record<string, string>
-  raw:       string
+  workflow: WorkflowType
+  params:   Record<string, string>
+  raw:      string
 }
 
 const PATTERNS: Array<{ workflow: WorkflowType; patterns: RegExp[] }> = [
-  {
-    workflow: "audit",
-    patterns: [
-      /audit\s+(contract|address|code)/i,
-      /analyse?\s+(contract|address)/i,
-      /check\s+(contract|this)/i,
-      /scan\s+(for\s+)?(vulnerabilit|security|bug)/i,
-      /review\s+(contract|code|solidity)/i,
-    ],
-  },
-  {
-    workflow: "verify",
-    patterns: [
-      /verify\s+(agent|ai|model)/i,
-      /mint\s+(credential|nft|erc-8004)/i,
-      /register\s+(agent|ai)/i,
-      /credential\s+(for|agent)/i,
-      /erc.?8004/i,
-    ],
-  },
-  {
-    workflow: "execute",
-    patterns: [
-      /execute\s+(intent|action|task)/i,
-      /run\s+(this|my|the)\s+(intent|action)/i,
-      /book\s+(a|hotel|flight)/i,
-      /swap\s+(token|hbar|eth)/i,
-      /send\s+(hbar|token)/i,
-      /i\s+want\s+to\s+\w+/i,
-    ],
-  },
-  {
-    workflow: "scan",
-    patterns: [
-      /security\s+(scan|check|agent)/i,
-      /register\s+(security|tee)\s+agent/i,
-      /stake\s+(hbar|agent)/i,
-      /scan\s+(agent|tee)/i,
-    ],
-  },
-  {
-    workflow: "blindaudit",
-    patterns: [
-      /blind\s+audit/i,
-      /tee\s+audit/i,
-      /private\s+audit/i,
-      /phala/i,
-      /sgx/i,
-      /audit.*(private|secret|confidential)/i,
-    ],
-  },
-  {
-    workflow: "status",
-    patterns: [
-      /status|health|alive|running/i,
-      /what\s+(can|do)\s+you/i,
-      /capabilities/i,
-    ],
-  },
-  {
-    workflow: "help",
-    patterns: [
-      /^help$/i,
-      /how\s+(do|can|to)/i,
-      /what\s+(is|are|workflows)/i,
-      /tell\s+me\s+(about|more)/i,
-      /explain/i,
-    ],
-  },
+  { workflow: "audit",      patterns: [/audit\s+(contract|address|code)/i, /analys[ei]\s+(contract|address)/i, /check\s+(contract|this)/i, /scan\s+(for\s+)?(vulnerabilit|security|bug)/i, /review\s+(contract|code|solidity)/i] },
+  { workflow: "verify",     patterns: [/verify\s+(agent|ai|model)/i, /mint\s+(credential|nft|erc-?8004)/i, /register\s+(agent|ai)/i, /credential\s+(for|agent)/i, /erc.?8004/i] },
+  { workflow: "execute",    patterns: [/execute\s+(intent|action|task)/i, /run\s+(this|my|the)\s+(intent|action)/i, /book\s+(a|hotel|flight)/i, /swap\s+(token|hbar|eth)/i, /send\s+(hbar|token)/i, /i\s+want\s+to\s+\w+/i] },
+  { workflow: "scan",       patterns: [/security\s+(scan|check|agent)/i, /register\s+(security|tee)\s+agent/i, /stake\s+(hbar|agent)/i, /scan\s+(agent|tee)/i] },
+  { workflow: "blindaudit", patterns: [/blind\s+audit/i, /tee\s+audit/i, /private\s+audit/i, /phala/i, /sgx/i, /audit.*(private|secret|confidential)/i] },
+  { workflow: "status",     patterns: [/\b(status|health|alive|running|online)\b/i, /what\s+(can|do)\s+you/i, /capabilities/i] },
+  { workflow: "help",       patterns: [/^help$/i, /how\s+(do|can|to)/i, /what\s+(is|are|workflows)/i, /tell\s+me\s+(about|more)/i, /^explain/i] },
 ]
 
 function classifyMessage(message: string): ParsedIntent {
   const lower = message.toLowerCase().trim()
-
   for (const { workflow, patterns } of PATTERNS) {
     if (patterns.some(p => p.test(lower))) {
-      // Extract common params
       const params: Record<string, string> = {}
-
-      const addrMatch = message.match(/0x[a-fA-F0-9]{40}/)
-      if (addrMatch) params.address = addrMatch[0]
-
-      const topicMatch = message.match(/\d+\.\d+\.\d+/)
-      if (topicMatch) params.topicId = topicMatch[0]
-
+      const addr = message.match(/0x[a-fA-F0-9]{40}/)
+      if (addr) params.address = addr[0]
+      const topic = message.match(/\d+\.\d+\.\d+/)
+      if (topic) params.topicId = topic[0]
       return { workflow, params, raw: message }
     }
   }
-
   return { workflow: "unknown", params: {}, raw: message }
 }
 
-// ── Workflow handlers ─────────────────────────────────────────────────────────
-
 async function handleHelp(): Promise<string> {
-  return `🔐 TrustBox AI Agent — I can help you with:
+  return `🔐 TrustBox AI Agent — workflows I support:
 
 📋 Smart Contract Audit
-  → "Audit contract 0x1234..." or "Check this contract for vulnerabilities"
+   "Audit contract 0x1234..."
 
-🤖 Verify AI Agent (ERC-8004)
-  → "Verify agent named SecureAudit using model llama-3.1-70b"
+🤖 Verify AI Agent (ERC-8004 NFT)
+   "Verify agent named TrustGuard using model llama-3.1-70b"
 
 ⚡ Execute Intent
-  → "Book a hotel in Lagos for 3 nights, budget $200/night"
-  → "Swap 10 HBAR to USDC"
+   "Book a hotel in Lagos for 3 nights, budget $200/night"
 
 🛡️ Security Agent Scan
-  → "Security scan agent agt_001 with TEE endpoint https://..."
+   "Security scan agent agt_001 with TEE endpoint https://..."
 
 🔐 Blind TEE Audit
-  → "Blind audit contract 0x1234... using agent agt_tee_001"
+   "Blind audit contract 0x1234..."
 
-💡 All results are anchored on Hedera Consensus Service (HCS) with absolute finality.
-   Visit https://trustboxhedera-ai.vercel.app to use the full dashboard.`
+💡 All results anchored on HCS with absolute Hedera finality.
+   Full dashboard: https://trustboxhedera-ai.vercel.app`
 }
 
 async function handleStatus(): Promise<string> {
-  return `✅ TrustBox AI Agent is online
+  return `✅ TrustBox AI Agent — online
 
 Network:   Hedera ${env.HEDERA_NETWORK}
+Contracts: TrustRegistry · AuditRegistry · AgentMarketplace · IntentVault
 Workflows: audit · verify · execute · scan · blindaudit
-Backend:   https://trustboxhedera-backend.onrender.com/health
 Dashboard: https://trustboxhedera-ai.vercel.app
 
-Send "help" for workflow examples.`
+Send "help" for examples.`
 }
 
 async function handleAudit(parsed: ParsedIntent): Promise<string> {
@@ -162,176 +78,135 @@ async function handleAudit(parsed: ParsedIntent): Promise<string> {
   if (!address) {
     return `📋 Contract Audit
 
-To audit a contract, send:
-  "Audit contract 0x<address>"
-  
-Example: "Audit contract 0x62e2Ba19a38AcA58B829aEC3ED8Db9bfd89D5Fd3"
+Send: "Audit contract 0x<address>"
+Example: "Audit contract 0x7Dd290DaF02F98d3d583fb35540c5d78dDeCEcbA"
 
-I'll run a Groq AI analysis, return findings, and anchor the report on HCS.`
+I'll run Groq AI analysis and return structured findings.
+To anchor on-chain: https://trustboxhedera-ai.vercel.app → Smart Contract`
   }
-
   try {
     const { findings, score, analysedBy } = await analyseContract(address, address.slice(0, 10))
     const critical = findings.filter((f: any) => f.severity === "critical").length
     const high     = findings.filter((f: any) => f.severity === "high").length
     const medium   = findings.filter((f: any) => f.severity === "medium").length
+    const top = findings.slice(0, 3).map((f: any) => `  • [${f.severity.toUpperCase()}] ${f.title}`).join("\n")
+    return `📋 Audit — ${address.slice(0, 10)}...
 
-    const findingsSummary = findings.slice(0, 3)
-      .map((f: any) => `  • [${f.severity.toUpperCase()}] ${f.title}`)
-      .join("\n")
-
-    return `📋 Audit Analysis — ${address.slice(0, 10)}...
-
-Score:     ${score}/100
-Findings:  ${findings.length} total (${critical} critical, ${high} high, ${medium} medium)
-Analysed:  ${analysedBy}
+Score:    ${score}/100
+Findings: ${findings.length} (${critical} critical · ${high} high · ${medium} medium)
+By:       ${analysedBy}
 
 Top findings:
-${findingsSummary}
+${top}
 
-To anchor this report on-chain, visit:
-https://trustboxhedera-ai.vercel.app → Smart Contract → enter ${address}
-
-Full HITL flow: findings → you review → sign → AuditRegistry.sol → HCS trail`
+To sign + anchor on AuditRegistry.sol:
+https://trustboxhedera-ai.vercel.app → Smart Contract → ${address}`
   } catch (err: any) {
-    return `⚠️ Analysis failed: ${err.message}\n\nVisit https://trustboxhedera-ai.vercel.app to run the full audit workflow.`
+    return `⚠️ Analysis error: ${err.message}\n\nTry the full workflow at https://trustboxhedera-ai.vercel.app`
   }
 }
 
 async function handleVerify(parsed: ParsedIntent): Promise<string> {
-  const agentMatch = parsed.raw.match(/named?\s+["']?([a-zA-Z0-9 _-]+)["']?/i)
-  const modelMatch = parsed.raw.match(/model\s+["']?([a-zA-Z0-9._/-]+)["']?/i)
-
-  const agentName = agentMatch?.[1]?.trim() ?? null
-  const model     = modelMatch?.[1]?.trim()  ?? null
+  const agentMatch = parsed.raw.match(/named?\s+["']?([a-zA-Z0-9 _-]+?)["']?(?:\s|$|using)/i)
+  const modelMatch = parsed.raw.match(/(?:model|using)\s+["']?([a-zA-Z0-9._/:-]+)["']?/i)
+  const agentName  = agentMatch?.[1]?.trim() ?? null
+  const model      = modelMatch?.[1]?.trim()  ?? null
 
   if (!agentName) {
     return `🤖 Verify AI Agent (ERC-8004)
 
-To mint an agent credential, send:
-  "Verify agent named <name> using model <model>"
-
+Send: "Verify agent named <name> using model <model>"
 Example: "Verify agent named TrustGuard using model llama-3.1-70b"
 
-I'll mint a soulbound ERC-8004 NFT on TrustRegistry.sol and write an HCS trail.
-Visit https://trustboxhedera-ai.vercel.app for the full HITL flow.`
+Full HITL flow: https://trustboxhedera-ai.vercel.app → AI Agent`
   }
-
   return `🤖 ERC-8004 Credential Mint
 
-Agent:  ${agentName}
-Model:  ${model ?? "not specified"}
+Agent: ${agentName}
+Model: ${model ?? "not specified"}
 
-To complete the mint, visit:
-https://trustboxhedera-ai.vercel.app → AI Agent → fill in details → Sign with MetaMask or HashPack
+To mint the soulbound NFT:
+https://trustboxhedera-ai.vercel.app → AI Agent → Sign with MetaMask or HashPack
 
-The credential will be:
-  • Soulbound (non-transferable)
-  • Anchored on TrustRegistry.sol (HSCS chainId 296)
+The credential is:
+  • Soulbound on TrustRegistry.sol (HSCS chainId 296)
   • Model hash committed on-chain
-  • HCS trail written to HCS_AGENT_TOPIC`
+  • HCS trail on HCS_AGENT_TOPIC`
 }
 
 async function handleExecute(parsed: ParsedIntent): Promise<string> {
   try {
-    const spec = await parseIntent(parsed.raw, "general")
+    const spec     = await parseIntent(parsed.raw, "general")
     const specJson = JSON.stringify(spec, null, 2)
+    return `⚡ Intent Parsed by Groq
 
-    return `⚡ Intent Parsed
+"${parsed.raw.slice(0, 100)}"
 
-Your intent: "${parsed.raw.slice(0, 100)}"
-
-Parsed spec:
+Structured spec:
 ${specJson}
 
-To execute this intent on-chain:
-1. Visit https://trustboxhedera-ai.vercel.app → Intent Command
-2. Paste your intent text
-3. Review the parsed spec
-4. Sign specHash with MetaMask or HashPack
-5. Anchored on IntentVault.sol → HCS trail
-
-Note: You sign the specHash (not raw text) — blocking prompt injection.`
+To sign + execute on IntentVault.sol:
+1. https://trustboxhedera-ai.vercel.app → Intent Command
+2. Review spec → Sign specHash → Anchored on HCS`
   } catch {
     return `⚡ Execute Intent
 
-Send me what you want to do in natural language:
+Send natural language — I'll parse it with Groq:
   "Book a hotel in Lagos for 3 nights"
   "Swap 10 HBAR to USDC"
 
-I'll parse it with Groq AI into a structured spec you can review and sign.
-Visit https://trustboxhedera-ai.vercel.app for the full flow.`
+Full flow: https://trustboxhedera-ai.vercel.app → Intent Command`
   }
 }
 
-async function handleScan(parsed: ParsedIntent): Promise<string> {
+async function handleScan(_parsed: ParsedIntent): Promise<string> {
   return `🛡️ Security Agent Scan
 
-To register a security agent on AgentMarketplace.sol:
+Required: Agent ID · Agent Name · TEE Endpoint URL · HBAR Stake
 
-Required:
-  • Agent ID (e.g. agt_001)
-  • Agent Name
-  • TEE Endpoint URL (https://...)
-  • HBAR Stake amount
+Full workflow: https://trustboxhedera-ai.vercel.app → Security Agent
 
-Visit https://trustboxhedera-ai.vercel.app → Security Agent
-
-The agent will be:
-  • Registered on AgentMarketplace.sol with HBAR stake
-  • Behavioural scan performed
-  • HCS trail written to HCS_AGENT_TOPIC
-  • Results verifiable on HashScan`
+Registers on AgentMarketplace.sol with HBAR stake.
+Behavioural scan + HCS trail on HCS_AGENT_TOPIC.`
 }
 
 async function handleBlindAudit(parsed: ParsedIntent): Promise<string> {
   const address = parsed.params.address
   return `🔐 Blind TEE Audit
 
-Your code is encrypted and audited inside a Phala SGX enclave.
-The source never leaves the TEE.
+Code audited inside Phala SGX — source never leaves the enclave.
+${address ? `Contract: ${address}` : "Provide contract address in the full workflow"}
 
-${address ? `Contract: ${address}` : "Provide a contract address in the full workflow"}
+Full flow: https://trustboxhedera-ai.vercel.app → Code Bundle
 
-Visit https://trustboxhedera-ai.vercel.app → Code Bundle
-
-Flow:
-  1. Code encrypted with agent TEE public key
-  2. Dispatched to Phala SGX enclave
-  3. Findings hash + SGX attestation quote returned
-  4. Attestation anchored on HCS_BLINDAUDIT_TOPIC
-  5. Result pinned to IPFS`
+Result: findings hash + SGX attestation anchored on HCS_BLINDAUDIT_TOPIC`
 }
 
 async function handleUnknown(parsed: ParsedIntent): Promise<string> {
-  // Try Groq for a more intelligent response
+  // Try Groq to interpret the message
   try {
     const spec = await parseIntent(parsed.raw, "general")
-    if (spec.action && spec.action !== "execute_task") {
-      return `I understood: ${spec.action}\n\nVisit https://trustboxhedera-ai.vercel.app to run this workflow.\n\nSend "help" to see what I can do.`
+    const action = spec?.action
+    if (action && action !== "execute_task" && action !== "unknown") {
+      return `I think you want to: ${action}\n\nVisit https://trustboxhedera-ai.vercel.app to run this workflow.\n\nSend "help" to see all options.`
     }
   } catch { /* ignore */ }
 
-  return `I didn't quite understand that. Send "help" to see what I can do.
+  return `I didn't understand that. Try one of these:
 
-Quick options:
   • "audit contract 0x..."
-  • "verify agent named X"
-  • "execute intent: book a hotel..."
+  • "verify agent named X using model Y"
+  • "book a hotel in Lagos for 3 nights"
   • "security scan agent agt_001"
-  • "blind audit contract 0x..."`
+  • "blind audit contract 0x..."
+  • "help" — see all workflows
+  • "status" — check if I'm online`
 }
 
-// ── Main router ───────────────────────────────────────────────────────────────
-
-export async function routeMessage(
-  sender:  string,
-  message: string
-): Promise<string> {
+export async function routeMessage(sender: string, message: string): Promise<string> {
   console.log(`[router] ${sender}: ${message.slice(0, 80)}`)
-
   const parsed = classifyMessage(message)
-  console.log(`[router] Classified as: ${parsed.workflow}`)
+  console.log(`[router] → ${parsed.workflow}`)
 
   switch (parsed.workflow) {
     case "help":       return handleHelp()
