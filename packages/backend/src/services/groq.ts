@@ -9,7 +9,7 @@
 import { env } from "../config/env"
 
 const GROQ_API = "https://api.groq.com/openai/v1/chat/completions"
-const MODEL    = "llama-3.1-70b-versatile"
+const MODEL    = "llama-3.3-70b-versatile"
 
 async function groqChat(
   systemPrompt: string,

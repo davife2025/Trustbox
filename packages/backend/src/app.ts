@@ -15,6 +15,7 @@ import { agentsRouter }  from "./api/agents"
 import { holRouter }     from "./api/hol"
 
 const app = express()
+app.set("trust proxy", 1)  // Render + Vercel sit behind proxies
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [

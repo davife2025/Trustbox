@@ -113,7 +113,7 @@ export async function registerTrustBoxAgent(): Promise<AgentState> {
     name:         "TrustBox AI Agent",
     alias,
     description:  "Verifiable trust infrastructure for AI agents on Hedera. Audit contracts, verify ERC-8004 credentials, execute signed intents, run security scans and blind TEE audits.",
-    model:        "llama-3.1-70b-versatile",
+    model:        "llama-3.3-70b-versatile",
     type:         "autonomous",
     capabilities: ["audit", "verify", "execute", "scan", "blindaudit"],
     inbound_topic:  inboundTopic,
