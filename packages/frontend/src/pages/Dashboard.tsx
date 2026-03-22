@@ -202,7 +202,7 @@ export default function Dashboard() {
             >
               <span style={{ fontSize:20, flexShrink:0 }}>{e.icon}</span>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:12, fontWeight:600, color: isActive ? meta?.color : "var(--text)", truncate:"ellipsis" }}>{e.label}</div>
+                <div style={{ fontSize:12, fontWeight:600, color: isActive ? meta?.color : "var(--text)" }}>{e.label}</div>
                 <div style={{ fontSize:10, color:"var(--text-3)", marginTop:1 }}>{e.badge}</div>
               </div>
               {isActive && <div style={{ width:3, height:24, borderRadius:2, background:meta?.color, flexShrink:0 }} />}

@@ -4,7 +4,7 @@ import { AuthProvider }   from "./context/AuthContext"
 import NavBar       from "./components/NavBar"
 import Landing      from "./pages/Landing"
 import Dashboard    from "./pages/Dashboard"
-import { HistoryPage } from "./pages/HistoryPage"
+import HistoryPage    from "./pages/HistoryPage"
 import Marketplace  from "./pages/Marketplace"
 import AgentChat    from "./pages/AgentChat"
 
