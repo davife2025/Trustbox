@@ -2,7 +2,7 @@
   "name": "trustboxhedera-ai",
   "version": "1.0.0",
   "private": true,
-  "description": "TrustBox Hedera AI — Verifiable trust infrastructure for AI agents on Hedera",
+  "description": "TrustBox Hedera AI \u2014 Verifiable trust infrastructure for AI agents on Hedera",
   "workspaces": [
     "packages/shared",
     "packages/contracts",
@@ -26,15 +26,7 @@
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/davife2025/Trustbox.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/davife2025/Trustbox/issues"
-  },
-  "homepage": "https://github.com/davife2025/Trustbox#readme"
+  "overrides": {
+    "rollup": "3.29.4"
+  }
 }
