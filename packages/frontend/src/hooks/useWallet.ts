@@ -92,7 +92,7 @@ export function useWallet() {
       const { HashConnect, HashConnectConnectionState } = await import("hashconnect")
       const { LedgerId } = await import("@hashgraph/sdk")
 
-      const projectId = import.meta.env.VITE_HASHCONNECT_PROJECT_ID
+      const projectId = (import.meta as any).env?.VITE_HASHCONNECT_PROJECT_ID ?? ""
       if (!projectId) {
         throw new Error(
           "VITE_HASHCONNECT_PROJECT_ID not set — get one free at https://cloud.walletconnect.com"

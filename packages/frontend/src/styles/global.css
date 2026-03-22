@@ -1,67 +1,124 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
-  --hbar:        #00A5E0;   /* Hedera brand blue */
-  --hbar-dim:    #00A5E033;
-  --teal:        #00e5c0;
-  --teal-dim:    #00e5c015;
-  --red:         #ff4d6a;
-  --red-dim:     #ff4d6a15;
-  --amber:       #ffb347;
-  --purple:      #8259EF;
-  --purple-dim:  #8259EF15;
-  --bg:          #0a0a0f;
-  --surface:     #111118;
-  --surface2:    #16161f;
-  --border:      #ffffff0f;
-  --text:        #e8e8f0;
-  --muted:       #6b6b80;
+  /* Hedera brand + TrustBox accent system */
+  --hbar:        #00A5E0;
+  --hbar-2:      #0082b3;
+  --hbar-dim:    rgba(0,165,224,0.12);
+  --hbar-glow:   rgba(0,165,224,0.25);
+  --teal:        #00d4b8;
+  --teal-dim:    rgba(0,212,184,0.1);
+  --amber:       #f5a623;
+  --amber-dim:   rgba(245,166,35,0.1);
+  --purple:      #8b5cf6;
+  --purple-dim:  rgba(139,92,246,0.1);
+  --red:         #f43f5e;
+  --red-dim:     rgba(244,63,94,0.1);
+  --green:       #10b981;
+
+  /* Surfaces */
+  --bg:          #050508;
+  --bg-2:        #08080e;
+  --surface:     #0d0d14;
+  --surface-2:   #12121c;
+  --surface-3:   #181826;
+  --border:      rgba(255,255,255,0.06);
+  --border-2:    rgba(255,255,255,0.1);
+
+  /* Text */
+  --text:        #f0f0f8;
+  --text-2:      #a0a0b8;
+  --text-3:      #606078;
+
+  /* Typography */
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { scroll-behavior: smooth; }
+
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
 
-/* ── Buttons ───────────────────────────────────────────────────────────────── */
+/* ── Noise texture overlay ───────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.4;
+}
+
+/* ── Grid background ─────────────────────────────────────────────────────── */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(0,165,224,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,165,224,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ── Glow orbs ───────────────────────────────────────────────────────────── */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+.orb-hbar  { background: radial-gradient(circle, rgba(0,165,224,0.2) 0%, transparent 70%); }
+.orb-teal  { background: radial-gradient(circle, rgba(0,212,184,0.15) 0%, transparent 70%); }
+.orb-purple{ background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%); }
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+.font-mono    { font-family: var(--font-mono); }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
 .btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 20px; border-radius: 8px;
-  font-size: 13px; font-weight: 500;
-  border: none; cursor: pointer; transition: all .15s;
-  white-space: nowrap;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 22px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; font-family: var(--font-body);
+  border: none; cursor: pointer; transition: all .2s;
+  white-space: nowrap; text-decoration: none;
 }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
 
 .btn-primary {
-  background: var(--hbar); color: #000;
+  background: var(--hbar);
+  color: #000;
+  box-shadow: 0 0 20px var(--hbar-glow);
 }
-.btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-primary:hover { background: #14b8f0; box-shadow: 0 0 32px var(--hbar-glow); transform: translateY(-1px); }
 
-.btn-teal {
-  background: var(--teal); color: #000;
+.btn-ghost {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
 }
-.btn-teal:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-ghost:hover { border-color: var(--border-2); color: var(--text); }
 
 .btn-outline {
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
+  border: 1px solid var(--border-2);
+  color: var(--text-2);
 }
-.btn-outline:hover:not(:disabled) { border-color: var(--hbar); color: var(--hbar); }
+.btn-outline:hover { border-color: var(--hbar); color: var(--hbar); }
 
 .btn-danger {
   background: var(--red-dim);
@@ -69,44 +126,67 @@ body {
   color: var(--red);
 }
 
-/* ── Card ──────────────────────────────────────────────────────────────────── */
+/* ── Cards ───────────────────────────────────────────────────────────────── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
 }
+.card-hover {
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.card-hover:hover {
+  border-color: var(--border-2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
 
-/* ── Input ─────────────────────────────────────────────────────────────────── */
+/* ── Input ───────────────────────────────────────────────────────────────── */
 .input {
   width: 100%;
-  background: var(--surface2);
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 14px;
   color: var(--text);
   font-size: 13px;
+  font-family: var(--font-body);
   outline: none;
-  transition: border-color .15s;
+  transition: border-color .15s, box-shadow .15s;
 }
-.input:focus { border-color: var(--hbar); }
-.input::placeholder { color: var(--muted); }
+.input:focus {
+  border-color: var(--hbar);
+  box-shadow: 0 0 0 3px var(--hbar-dim);
+}
+.input::placeholder { color: var(--text-3); }
 
-/* ── Chain pill ────────────────────────────────────────────────────────────── */
+/* ── Badge ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 10px; font-weight: 600;
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Chain pill ──────────────────────────────────────────────────────────── */
 .chain-pill {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 10px; border-radius: 20px;
   font-size: 11px; font-weight: 500;
   border: 1px solid currentColor;
+  opacity: 0.8;
 }
 
-/* ── Status dot ────────────────────────────────────────────────────────────── */
-.dot-online  { width:7px; height:7px; border-radius:50%; background:var(--teal); }
-.dot-offline { width:7px; height:7px; border-radius:50%; background:var(--muted); }
-.dot-warn    { width:7px; height:7px; border-radius:50%; background:var(--amber); }
+/* ── Status dot ──────────────────────────────────────────────────────────── */
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dot-online  { background: var(--teal); box-shadow: 0 0 6px var(--teal); animation: pulse-dot 2s ease infinite; }
+.dot-offline { background: var(--text-3); }
+.dot-warn    { background: var(--amber); }
 
-/* ── Spinner ───────────────────────────────────────────────────────────────── */
-@keyframes spin { to { transform: rotate(360deg); } }
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
 .spinner {
   width: 20px; height: 20px;
   border: 2px solid var(--border);
@@ -115,10 +195,71 @@ body {
   animation: spin .7s linear infinite;
 }
 
-/* ── Fade in ───────────────────────────────────────────────────────────────── */
-@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-.fade-in { animation: fadeIn .25s ease forwards; }
+/* ── Score ring ──────────────────────────────────────────────────────────── */
+.score-bar {
+  height: 3px; border-radius: 2px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.score-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--hbar), var(--teal));
+  transition: width .6s ease;
+}
 
-/* ── Glow border ───────────────────────────────────────────────────────────── */
-.glow-hbar  { box-shadow: 0 0 0 1px var(--hbar), 0 0 20px var(--hbar-dim); }
-.glow-teal  { box-shadow: 0 0 0 1px var(--teal), 0 0 20px var(--teal-dim); }
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes spin       { to { transform: rotate(360deg); } }
+@keyframes spin-ccw   { to { transform: rotate(-360deg); } }
+@keyframes fadeIn     { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@keyframes fadeInUp   { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:none; } }
+@keyframes slideIn    { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:none; } }
+@keyframes pulse-dot  { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+@keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px var(--hbar-glow);} 50%{box-shadow:0 0 40px var(--hbar-glow);} }
+@keyframes float      { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+@keyframes shimmer    {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.fade-in    { animation: fadeIn   .3s ease forwards; }
+.fade-in-up { animation: fadeInUp .4s ease forwards; }
+.slide-in   { animation: slideIn  .3s ease forwards; }
+
+/* ── Shimmer loader ──────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% auto;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: 6px;
+}
+
+/* ── Glass effect ────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(13,13,20,0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ── Hex decorative ──────────────────────────────────────────────────────── */
+.hex-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V17L28 0l28 17v33z' fill='none' stroke='rgba(0,165,224,0.06)' stroke-width='1'/%3E%3Cpath d='M28 100L0 83V50l28-17 28 17v33z' fill='none' stroke='rgba(0,165,224,0.06)' stroke-width='1'/%3E%3C/svg%3E");
+}
+
+/* ── Trust meter ring ────────────────────────────────────────────────────── */
+.trust-ring {
+  position: relative;
+  width: 120px; height: 120px;
+}
+.trust-ring svg {
+  transform: rotate(-90deg);
+}
+.trust-ring-track { fill: none; stroke: var(--surface-3); stroke-width: 8; }
+.trust-ring-fill  { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+
+/* ── Workflow step ───────────────────────────────────────────────────────── */
+.step-line {
+  position: absolute;
+  left: 11px; top: 28px; bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--border-2), transparent);
+}
