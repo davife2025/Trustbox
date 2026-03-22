@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "cd packages/frontend && npm install && npm run build",
+  "buildCommand": "cd packages/frontend && npm install rollup@3.29.4 --no-save && tsc && vite build",
   "outputDirectory": "packages/frontend/dist",
-  "installCommand": "echo 'skip root install'",
+  "installCommand": "cd packages/frontend && npm install --legacy-peer-deps",
   "framework": null,
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
   "env": {
