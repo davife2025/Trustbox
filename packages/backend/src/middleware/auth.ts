@@ -54,9 +54,19 @@ export function requireWalletSig(req: Request, res: Response, next: NextFunction
 
   try {
     // Recover signer from EIP-191 personal_sign
-    const messageHash = specHash ?? walletAddress
-    const recovered   = ethers.verifyMessage(messageHash, signature)
-    if (recovered.toLowerCase() !== walletAddress.toLowerCase()) {
+    // Each workflow signs a different message — try all valid options
+    const { reportHash, metadataURI, nlHash } = req.body
+    const candidates = [specHash, reportHash, metadataURI, nlHash, walletAddress].filter(Boolean)
+    let verified = false
+    for (const msg of candidates) {
+      try {
+        const recovered = ethers.verifyMessage(msg, signature)
+        if (recovered.toLowerCase() === walletAddress.toLowerCase()) {
+          verified = true; break
+        }
+      } catch { /* try next */ }
+    }
+    if (!verified) {
       return res.status(401).json({ error: "Signature does not match walletAddress" })
     }
     next()
