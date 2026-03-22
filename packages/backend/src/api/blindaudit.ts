@@ -12,6 +12,7 @@ import { dispatchTEEJob, pollJobResult, verifyAttestation, encryptForAgent, getA
 import { getAgentMarketplace, waitForTx, getGasConfig, explorerTx } from "../services/ethers"
 import { submitBlindAuditTrail } from "../services/hedera"
 import { env } from "../config/env"
+import { saveBlindAudit } from "../services/supabase"
 
 export const blindAuditRouter = Router()
 

@@ -14,6 +14,7 @@ import { getIntentVault, waitForTx, getGasConfig, explorerTx } from "../services
 import { pinIntentRecord }   from "../services/ipfs"
 import { submitIntentTrail, submitIntentExecutedTrail } from "../services/hedera"
 import { env }               from "../config/env"
+import { saveIntent }        from "../services/supabase"
 
 export const executeRouter = Router()
 
@@ -60,7 +61,8 @@ executeRouter.post("/submit",
     try {
       const {
         walletAddress, hederaAccount,
-        nlHash, specHash, specJson, category, signature,
+        nlHash, specHash, category, signature,
+        specJson: rawSpecJson,
       } = req.body
 
       const vault     = getIntentVault()
@@ -123,6 +125,11 @@ executeRouter.post("/submit",
         intentId, nlHash, specHash,
         userSig: signature, executionHash, category, timestamp,
       })
+
+      saveIntent({
+        id: intentId, wallet: walletAddress, category,
+        specHash, executionHash, txHash: submitReceipt.hash, hcsSeq: hcsSubmit.sequenceNumber,
+      }).catch(e => console.warn("[supabase] intent save:", e.message))
 
       res.json({
         success:        true,

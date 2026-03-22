@@ -12,6 +12,7 @@ import { getTrustRegistry, waitForTx, getGasConfig, explorerTx } from "../servic
 import { pinAgentMetadata } from "../services/ipfs"
 import { submitAgentTrail } from "../services/hedera"
 import { env }              from "../config/env"
+import { saveAgent }        from "../services/supabase"
 
 export const verifyRouter = Router()
 
@@ -125,6 +126,11 @@ verifyRouter.post("/mint",
         agentId, tokenId, operator: walletAddress,
         modelHash, txHash: receipt.hash, timestamp: mintedAt,
       })
+
+      saveAgent({
+        id: agentId, wallet: walletAddress, agentName,
+        model, tokenId, txHash: receipt.hash, hcsSeq: hcs.sequenceNumber,
+      }).catch(e => console.warn("[supabase] agent save:", e.message))
 
       res.json({
         success:      true,

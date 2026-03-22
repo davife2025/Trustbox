@@ -41,6 +41,10 @@ const envSchema = z.object({
 
   FRONTEND_URL: z.string().optional(),
 
+  // ── Supabase ─────────────────────────────────────────────────────────────
+  SUPABASE_URL:     z.string().optional(),
+  SUPABASE_KEY:     z.string().optional(),   // service role key (not anon)
+
   // ── HOL Registry + HCS-10 ────────────────────────────────────────────────
   HOL_REGISTRY_URL:    z.string().default("https://moonscape.tech"),
   HOL_AGENT_ACCOUNT_ID:   z.string().optional(),   // dedicated agent Hedera account

@@ -49,6 +49,14 @@ auditRouter.post("/prepare",
       const reportPayload = { contractAddress, contractName: name, chain: chainName, findings, score, merkleRoot, auditedAt }
       const reportHash    = ethers.id(JSON.stringify(reportPayload))
 
+      // Save to Supabase
+      saveAudit({
+        id: auditId || `audit_${Date.now()}`,
+        wallet: walletAddress, contract: contractAddress,
+        score: finalScore, reportCid: cid,
+        txHash: receipt.hash, hcsSeq: hcs.sequenceNumber,
+      }).catch(e => console.warn("[supabase] audit save:", e.message))
+
       res.json({
         success:      true,
         phase:        "prepare",
