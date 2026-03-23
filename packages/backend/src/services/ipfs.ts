@@ -36,12 +36,22 @@ export async function pinJSON(
     return stubCid(data)
   }
   try {
-    const result = await pinata.pinning.pinJSONToIPFS(data, {
-      pinataMetadata: { name: `trustboxhedera-${name}-${Date.now()}` },
-    })
+    // Try new Pinata SDK v2 API first, fall back to v1
+    let cid: string
+    if (pinata.upload?.json) {
+      const result = await pinata.upload.json(data).addMetadata({ name: `trustboxhedera-${name}-${Date.now()}` })
+      cid = result.cid ?? result.IpfsHash
+    } else if (pinata.pinning?.pinJSONToIPFS) {
+      const result = await pinata.pinning.pinJSONToIPFS(data, {
+        pinataMetadata: { name: `trustboxhedera-${name}-${Date.now()}` },
+      })
+      cid = result.IpfsHash
+    } else {
+      throw new Error("Pinata SDK API not recognised")
+    }
     return {
-      cid: result.IpfsHash,
-      url: `${env.PINATA_GATEWAY}/ipfs/${result.IpfsHash}`,
+      cid,
+      url: `${env.PINATA_GATEWAY ?? "https://gateway.pinata.cloud"}/ipfs/${cid}`,
     }
   } catch (err: any) {
     console.warn(`[ipfs] Pinata error for "${name}": ${err.message} — stub CID`)
