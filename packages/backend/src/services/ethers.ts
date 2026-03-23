@@ -124,7 +124,7 @@ function makeContract(address: string | undefined, abi: string[]): Contract {
   }
   // Verify ABI parses correctly
   const iface = new Interface(abi)
-  const fnCount = Object.keys(iface.functions).length
+ const fnCount  = iface.fragments.length
   console.log(`[ethers] Contract ${addr.slice(0,10)}… loaded with ${fnCount} functions`)
   return new Contract(addr, abi, signer)
 }
