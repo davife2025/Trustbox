@@ -6,7 +6,7 @@
 import { Router, Request, Response } from "express"
 import { ethers }              from "ethers"
 import { MerkleTree }          from "merkletreejs"
-import { requireWalletSig }    from "../middleware/auth"
+import { requireJWT }          from "../middleware/auth"
 import { walletRateLimit }     from "../middleware/rateLimit"
 import { validate, AuditSchema } from "../middleware/validate"
 import { getAuditRegistry, waitForTx, getGasConfig, signer, explorerTx, explorerContract } from "../services/ethers"
@@ -77,7 +77,7 @@ auditRouter.post("/prepare",
 auditRouter.post("/",
   walletRateLimit,
   validate(AuditSchema),
-  requireWalletSig,
+  requireJWT,
   async (req: Request, res: Response) => {
     try {
       const {

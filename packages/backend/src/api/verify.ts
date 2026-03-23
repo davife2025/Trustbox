@@ -5,7 +5,7 @@
 
 import { Router, Request, Response } from "express"
 import { ethers }           from "ethers"
-import { requireWalletSig } from "../middleware/auth"
+import { requireJWT }       from "../middleware/auth"
 import { walletRateLimit }  from "../middleware/rateLimit"
 import { validate, VerifySchema } from "../middleware/validate"
 import { getTrustRegistry, waitForTx, getGasConfig, explorerTx } from "../services/ethers"
@@ -66,7 +66,7 @@ verifyRouter.post("/prepare",
 verifyRouter.post("/mint",
   walletRateLimit,
   validate(VerifySchema),
-  requireWalletSig,
+  requireJWT,
   async (req: Request, res: Response) => {
     try {
       const {
