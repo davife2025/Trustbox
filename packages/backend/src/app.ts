@@ -13,6 +13,7 @@ import { blindAuditRouter } from "./api/blindaudit"
 import { executeRouter } from "./api/execute"
 import { agentsRouter }  from "./api/agents"
 import { holRouter }     from "./api/hol"
+import { healthRouter }  from "./api/healthCheck"
 
 const app = express()
 app.set("trust proxy", 1)  // Render + Vercel sit behind proxies
@@ -54,8 +55,25 @@ app.use("/api/blindaudit", blindAuditRouter)
 app.use("/api/intent",     executeRouter)
 app.use("/api/agents",     agentsRouter)
 app.use("/api/hol",        holRouter)
+app.use("/health",         healthRouter)
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
+app.get("/health", (_req, res) => {
+  res.json({
+    status:     "ok",
+    chain:      "Hedera Smart Contract Service",
+    network:    process.env.HEDERA_NETWORK ?? "testnet",
+    jwtSet:     !!process.env.JWT_SECRET,
+    groqSet:    !!process.env.GROQ_API_KEY,
+    contracts: {
+      trustRegistry:    !!process.env.TRUST_REGISTRY_ADDR,
+      auditRegistry:    !!process.env.AUDIT_REGISTRY_ADDR,
+      agentMarketplace: !!process.env.AGENT_MARKETPLACE_ADDR,
+      intentVault:      !!process.env.INTENT_VAULT_ADDR,
+    },
+  })
+})
+
 app.use((_req, res) => res.status(404).json({ error: "Route not found" }))
 
 // ── Error handler ─────────────────────────────────────────────────────────────

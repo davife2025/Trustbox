@@ -126,6 +126,12 @@ auditRouter.post("/",
       const registry  = getAuditRegistry()
       const gasConfig = await getGasConfig()
 
+      // Verify ABI loaded correctly
+      const submitFn = registry.getFunction("submitAudit")
+      if (!submitFn) throw new Error("submitAudit not found in ABI — ABI loading failed on Render")
+      console.log("[audit] submitAudit function found, encoding tx...")
+      console.log("[audit] args:", contractAddress, finalHash?.slice(0,10), finalMerkle?.slice(0,10), cid?.slice(0,20), sig?.slice(0,10))
+
       const tx = await registry.submitAudit(
         contractAddress,
         finalHash,
