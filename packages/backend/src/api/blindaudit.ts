@@ -79,18 +79,18 @@ blindAuditRouter.post("/",
           )
           const receipt = await waitForTx(tx)
           jobTxHash = receipt.hash
+          for (const log of receipt.logs) {
+            try {
+              const parsed = marketplace.interface.parseLog(log)
+              if (parsed?.name === "JobCreated") {
+                jobId = parsed.args.jobId?.toString() ?? jobId
+              }
+            } catch { /* skip */ }
+          }
+          console.log(`[blindaudit] Job created on HSCS — jobId: ${jobId}`)
         } else {
           console.log(`[blindaudit] Agent ${agentId} not registered on AgentMarketplace — skipping job creation`)
         }
-        for (const log of receipt.logs) {
-          try {
-            const parsed = marketplace.interface.parseLog(log)
-            if (parsed?.name === "JobCreated") {
-              jobId = parsed.args.jobId?.toString() ?? jobId
-            }
-          } catch { /* skip */ }
-        }
-        console.log(`[blindaudit] Job created on HSCS — jobId: ${jobId}`)
       } catch (err: any) {
         console.warn(`[blindaudit] Job creation warning: ${err.message}`)
       }
