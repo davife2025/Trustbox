@@ -59,16 +59,29 @@ blindAuditRouter.post("/",
       let jobTxHash     = ""
 
       try {
+        // Check if agent is registered before creating job
         const agentIdHash = ethers.id(agentId)
         const operator    = agentOperator ?? walletAddress
-        const tx = await marketplace.createJob(
-          agentIdHash, operator,
-          ethers.toUtf8Bytes(encryptedPayload),
-          payloadHash,
-          { ...gasConfig }
-        )
-        const receipt = await waitForTx(tx)
-        jobTxHash = receipt.hash
+
+        // Try to get agent — if tokenId is 0 the agent isn't registered, skip job creation
+        let agentTokenId = 0n
+        try {
+          const [, tokenId] = await marketplace.getAgentByIdHash(agentIdHash)
+          agentTokenId = BigInt(tokenId ?? 0)
+        } catch { /* agent not found */ }
+
+        if (agentTokenId > 0n) {
+          const tx = await marketplace.createJob(
+            agentIdHash, operator,
+            ethers.toUtf8Bytes(encryptedPayload),
+            payloadHash,
+            { ...gasConfig }
+          )
+          const receipt = await waitForTx(tx)
+          jobTxHash = receipt.hash
+        } else {
+          console.log(`[blindaudit] Agent ${agentId} not registered on AgentMarketplace — skipping job creation`)
+        }
         for (const log of receipt.logs) {
           try {
             const parsed = marketplace.interface.parseLog(log)
