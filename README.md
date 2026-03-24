@@ -7,8 +7,8 @@
 [![Groq](https://img.shields.io/badge/Groq-Llama_3.1_70B-f55036?style=for-the-badge)](https://groq.com)
 [![Phala](https://img.shields.io/badge/Phala-TEE_Network-8259EF?style=for-the-badge)](https://phala.network)
 
-**Live app:** https://trustboxhedera-ai.vercel.app  
-**Backend:** https://trustboxhedera-backend.onrender.com  
+**Live app:** https://trustbox-omega.vercel.app  
+**Backend:** https://trustbox-backend.onrender.com  
 **HashScan:** https://hashscan.io/testnet
 
 ---
