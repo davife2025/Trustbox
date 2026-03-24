@@ -258,7 +258,10 @@ Express Backend (Render)
         └── IPFS (Pinata) ───────────────── Reports, metadata, receipts
 ```
 
----
+---<img width="1365" height="744" alt="1qaq1qa" src="https://github.com/user-attachments/assets/39cdf232-291e-4ea4-9ade-87a2bd52191e" />
+
+
+
 
 *TrustBoxHedera AI — Making AI agents trustworthy on Hedera.*  
 *Built on HSCS | Secured by HCS | Powered by Groq | Attested by Phala*
